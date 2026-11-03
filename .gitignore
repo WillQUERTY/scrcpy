@@ -4,6 +4,7 @@ build/
 /build_*/
 /release-*/
 /prebuilt/
+*.zip
 .idea/
 .gradle/
 /x/
