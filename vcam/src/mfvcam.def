@@ -1,0 +1,7 @@
+LIBRARY "scrcpy-mfvcam"
+EXPORTS
+    DllCanUnloadNow     PRIVATE
+    DllGetClassObject   PRIVATE
+    DllRegisterServer   PRIVATE
+    DllUnregisterServer PRIVATE
+
