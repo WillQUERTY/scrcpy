@@ -3,6 +3,10 @@
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
 
+> [!NOTE]
+> **Windows 11 Virtual Camera Edition**: This fork adds native Windows Virtual Camera support powered by Windows Media Foundation (`IMFVirtualCamera`). Stream your Android camera directly to Zoom, Meet, Teams, OBS, and Discord with no third-party webcam drivers, OBS plugins, or mobile helper apps needed.
+> See [Windows Virtual Camera documentation](doc/vcam.md) and [vcam/README.md](vcam/README.md).
+
 # scrcpy (v5.0.1)
 
 <img src="app/data/scrcpy.svg" width="128" height="128" alt="scrcpy" align="right" />
@@ -42,6 +46,7 @@ Its features include:
  - [configurable quality](doc/video.md)
  - [camera mirroring](doc/camera.md) (Android 12+)
  - [mirroring as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
+ - [mirroring as a webcam (Media Foundation)](doc/vcam.md) (Windows 11)
  - physical [keyboard][hid-keyboard] and [mouse][hid-mouse] simulation (HID)
  - [gamepad](doc/gamepad.md) support
  - [OTG mode](doc/otg.md)
