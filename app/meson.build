@@ -120,6 +120,11 @@ if d3d11va_support
     src += [ 'src/interop/interop_d3d11va.c' ]
 endif
 
+vcam_support = get_option('vcam') and host_machine.system() == 'windows'
+if vcam_support
+    src += [ 'src/vcam_sink.c' ]
+endif
+
 videotoolbox_support = get_option('videotoolbox') \
                        and host_machine.system() == 'darwin'
 if videotoolbox_support
@@ -152,6 +157,10 @@ dependencies = [
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
+endif
+
+if vcam_support
+    dependencies += dependency('libswscale', static: static)
 endif
 
 if vaapi_support
@@ -224,6 +233,9 @@ conf.set('HAVE_VAAPI', vaapi_support)
 
 # enable D3D11 hardware decoding (windows only)
 conf.set('HAVE_D3D11VA', d3d11va_support)
+
+# enable Windows Virtual Camera sink (windows only)
+conf.set('HAVE_VCAM', vcam_support)
 
 # enable VideoToolbox hardware decoding (macOS only)
 conf.set('HAVE_VIDEOTOOLBOX', videotoolbox_support)

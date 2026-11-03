@@ -3,6 +3,7 @@ build/
 /build-*/
 /build_*/
 /release-*/
+/prebuilt/
 .idea/
 .gradle/
 /x/

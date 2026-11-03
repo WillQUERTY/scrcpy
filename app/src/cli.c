@@ -112,6 +112,8 @@ enum {
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
     OPT_HWDEC,
+    OPT_VCAM,
+    OPT_WEBCAM,
 };
 
 struct sc_option {
@@ -970,6 +972,21 @@ static const struct sc_option options[] = {
         .argdesc = "/dev/videoN",
         .text = "Output to v4l2loopback device.\n"
                 "This feature is only available on Linux.",
+    },
+    {
+        .longopt_id = OPT_VCAM,
+        .longopt = "vcam",
+        .text = "Output video stream to the Windows 'scrcpy Virtual Camera' "
+                "device.\n"
+                "This feature is only available on Windows.",
+    },
+    {
+        .longopt_id = OPT_WEBCAM,
+        .longopt = "webcam",
+        .text = "Shortcut for --video-source=camera --no-window --no-audio "
+                "--no-control --vcam.\n"
+                "Stream the Android camera directly as a Windows webcam "
+                "without opening a window (Windows only).",
     },
     {
         .longopt_id = OPT_V4L2_BUFFER,
@@ -3010,6 +3027,28 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_VCAM:
+#ifdef HAVE_VCAM
+                opts->vcam = true;
+                break;
+#else
+                LOGE("Windows virtual camera (--vcam) is disabled (or "
+                     "unsupported on this platform).");
+                return false;
+#endif
+            case OPT_WEBCAM:
+#ifdef HAVE_VCAM
+                opts->video_source = SC_VIDEO_SOURCE_CAMERA;
+                opts->window = false;
+                opts->audio = false;
+                opts->control = false;
+                opts->vcam = true;
+                break;
+#else
+                LOGE("Windows webcam mode (--webcam) is disabled (or "
+                     "unsupported on this platform).");
+                return false;
+#endif
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -3040,11 +3079,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     bool otg = false;
     bool v4l2 = false;
+    bool vcam = false;
 #ifdef HAVE_USB
     otg = opts->otg;
 #endif
 #ifdef HAVE_V4L2
     v4l2 = !!opts->v4l2_device;
+#endif
+#ifdef HAVE_VCAM
+    vcam = opts->vcam;
 #endif
 
     if (!opts->window) {
@@ -3065,8 +3108,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !v4l2) {
-        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+            && !v4l2 && !vcam) {
+        LOGI("No video playback, no recording, no virtual camera sink: video disabled");
         opts->video = false;
     }
 
@@ -3112,6 +3155,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             }
             LOGI("V4L2 sink enabled, hardware decoding disabled");
             opts->hwdec_mode = SC_HWDEC_MODE_DISABLED;
+        } else if (vcam) {
+            if (opts->hwdec_mode != SC_HWDEC_MODE_AUTO) {
+                LOGE("Hardware decoding is not compatible with --vcam");
+                return false;
+            }
+            LOGI("Virtual camera sink enabled, hardware decoding disabled");
+            opts->hwdec_mode = SC_HWDEC_MODE_DISABLED;
         }
     }
 
@@ -3136,6 +3186,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->v4l2_buffer && !opts->v4l2_device) {
         LOGE("V4L2 buffer value without V4L2 sink");
+        return false;
+    }
+#endif
+
+#ifdef HAVE_VCAM
+    if (vcam && !opts->video) {
+        LOGE("Virtual camera sink (--vcam) requires video capture, but "
+             "--no-video was set.");
         return false;
     }
 #endif
@@ -3571,6 +3629,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
         if (v4l2) {
             LOGE("OTG mode: could not sink to V4L2 device");
+            return false;
+        }
+        if (vcam) {
+            LOGE("OTG mode: could not sink to virtual camera");
             return false;
         }
     }

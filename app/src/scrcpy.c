@@ -47,6 +47,9 @@
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
+#ifdef HAVE_VCAM
+# include "vcam_sink.h"
+#endif
 #include "video_regulator.h"
 
 #define SC_BACKPRESSURE_THRESHOLD 8 // in-flight frames in video regulator
@@ -65,6 +68,9 @@ struct scrcpy {
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
     struct sc_video_regulator v4l2_regulator;
+#endif
+#ifdef HAVE_VCAM
+    struct sc_vcam_sink vcam_sink;
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
@@ -399,6 +405,9 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
     bool v4l2_regulator_initialized = false;
+#endif
+#ifdef HAVE_VCAM
+    bool vcam_sink_initialized = false;
 #endif
     bool video_regulator_initialized = false;
     bool video_demuxer_started = false;
@@ -854,6 +863,9 @@ aoa_complete:
 #ifdef HAVE_V4L2
     needs_video_decoder |= !!options->v4l2_device;
 #endif
+#ifdef HAVE_VCAM
+    needs_video_decoder |= options->vcam;
+#endif
     if (needs_video_decoder) {
         struct sc_screen *screen = options->video_playback ? &s->screen : NULL;
         assert(!screen || screen_initialized);
@@ -959,6 +971,17 @@ aoa_complete:
         sc_frame_source_add_sink(src, &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
+    }
+#endif
+
+#ifdef HAVE_VCAM
+    if (options->vcam) {
+        if (!sc_vcam_sink_init(&s->vcam_sink)) {
+            goto end;
+        }
+        sc_frame_source_add_sink(&s->video_decoder.frame_source,
+                                  &s->vcam_sink.frame_sink);
+        vcam_sink_initialized = true;
     }
 #endif
 
@@ -1135,6 +1158,11 @@ end:
     }
     if (v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
+    }
+#endif
+#ifdef HAVE_VCAM
+    if (vcam_sink_initialized) {
+        sc_vcam_sink_destroy(&s->vcam_sink);
     }
 #endif
 
